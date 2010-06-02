@@ -218,18 +218,6 @@ class Kohana_ORM {
 	}
 
 	/**
-	 * Allows serialization of only the object data and state, to prevent
-	 * "stale" objects being unserialized, which also requires less memory.
-	 *
-	 * @return  array
-	 */
-	public function __sleep()
-	{
-		// Store only information about the object
-		return array('_object_name', '_object', '_changed', '_loaded', '_saved', '_sorting');
-	}
-
-	/**
 	 * Prepares the database connection and reloads the object.
 	 *
 	 * @return  void
