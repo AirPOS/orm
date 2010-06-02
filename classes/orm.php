@@ -82,7 +82,7 @@ abstract class ORM extends Kohana_ORM
 	{
 		$result = parent::_load_result($multiple);
 		
-		if ( ! $this->_saved AND ! $this->_loaded)
+		if ( ! $this->_saved AND ! $this->_loaded AND $this->empty_pk())
 		{
 			// Set the UUID primary key
 			$this->_object[$this->_primary_key] = ORM::uuid();
@@ -102,7 +102,7 @@ abstract class ORM extends Kohana_ORM
 	{
 		$result = parent::_load();
 		
-		if ( ! $this->_saved AND ! $this->_loaded)
+		if ( ! $this->_saved AND ! $this->_loaded AND $this->empty_pk())
 		{
 			// Set the UUID primary key
 			$this->_object[$this->_primary_key] = ORM::uuid();
