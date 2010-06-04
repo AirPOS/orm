@@ -120,6 +120,9 @@ class Kohana_ORM {
 	 */
 	public function __construct($id = NULL)
 	{
+		// Set Database to appliction's environment
+		$this->_db = Kohana::$environment;
+
 		// Set the object name and plural name
 		$this->_object_name   = strtolower(substr(get_class($this), 6));
 		$this->_object_plural = Inflector::plural($this->_object_name);
@@ -297,7 +300,10 @@ class Kohana_ORM {
 
 			return $this->_object[$column];
 		}
-		elseif (isset($this->_related[$column]) AND $this->_related[$column]->_loaded)
+		// Removed the loaded check on the related model. When working with multiple models
+		// using the UUID keys we always want to make sure we're using the same model each
+		// time so we can be sure relationships are saving correctly.
+		elseif (isset($this->_related[$column]) /*AND $this->_related[$column]->_loaded*/)
 		{
 			// Return related model that has already been loaded
 			return $this->_related[$column];
@@ -439,6 +445,70 @@ class Kohana_ORM {
 		}
 
 		return $this;
+	}
+
+	/**
+	 * Start Transaction
+	 */
+	public static function start()
+	{
+		DB::query(NULL, "START TRANSACTION")->execute(Kohana::$environment);
+	}
+
+	/**
+	 * Commit Transaction
+	 */
+	public static function commit()
+	{
+		DB::query(NULL, "COMMIT")->execute(Kohana::$environment);
+	}
+
+	/**
+	 * Rollback Transaction
+	 */
+	public static function rollback()
+	{
+		DB::query(NULL, "ROLLBACK")->execute(Kohana::$environment);
+	}
+
+	/**
+	 * Validation Errors
+	 */
+	public function errors($file = 'validate', $translate = TRUE)
+	{
+		if (is_object($this->_validate))
+			return $this->_validate->errors($file, $translate);
+
+		return array();
+	}
+
+	/**
+	 * Generate UUID
+	 */
+	public static function uuid()
+	{
+		return sprintf
+		(
+			'%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+
+			// 32 bits for "time_low"
+			mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
+
+			// 16 bits for "time_mid"
+			mt_rand( 0, 0xffff ),
+
+			// 16 bits for "time_hi_and_version",
+			// four most significant bits holds version number 4
+			mt_rand( 0, 0x0fff ) | 0x4000,
+
+			// 16 bits, 8 bits for "clk_seq_hi_res",
+			// 8 bits for "clk_seq_low",
+			// two most significant bits holds zero and one for variant DCE1.1
+			mt_rand( 0, 0x3fff ) | 0x8000,
+
+			// 48 bits for "node"
+			mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
+	    );
 	}
 
 	/**
@@ -722,6 +792,12 @@ class Kohana_ORM {
 			// Only load if it hasn't been loaded, and a primary key is specified and hasn't been modified
 			return $this->find($this->pk());
 		}
+		elseif ( ! $this->_loaded AND ! $this->_saved AND $this->empty_pk())
+		{
+			// We'll take this oppurtunity to create a new primary key
+			$this->_object[$this->_primary_key] = ORM::uuid();
+			$this->_changed[$this->_primary_key] = $this->_primary_key;
+		}
 	}
 
 	/**
@@ -847,6 +923,9 @@ class Kohana_ORM {
 		}
 		else
 		{
+			// Set the UUID primary key
+			$data[$this->_primary_key] = ORM::uuid();
+
 			if (is_array($this->_created_column))
 			{
 				// Fill the created column
