@@ -893,6 +893,13 @@ class Kohana_ORM {
 		if (empty($this->_changed))
 			return $this;
 
+		// Set the UUID primary key if it hasn't been set already
+		if ($this->empty_pk())
+		{
+			$this->_object[$this->_primary_key] = ORM::uuid();
+			$this->_changed[$this->_primary_key] = $this->_primary_key;
+		}
+
 		$data = array();
 		foreach ($this->_changed as $column)
 		{
@@ -923,9 +930,6 @@ class Kohana_ORM {
 		}
 		else
 		{
-			// Set the UUID primary key
-			$data[$this->_primary_key] = ORM::uuid();
-
 			if (is_array($this->_created_column))
 			{
 				// Fill the created column
@@ -942,13 +946,6 @@ class Kohana_ORM {
 
 			if ($result)
 			{
-				if ($this->empty_pk())
-				{
-					// Load the insert id as the primary key
-					// $result is array(insert_id, total_rows)
-					$this->_object[$this->_primary_key] = $result[0];
-				}
-
 				// Object is now loaded and saved
 				$this->_loaded = $this->_saved = TRUE;
 			}
