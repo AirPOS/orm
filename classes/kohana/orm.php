@@ -428,8 +428,11 @@ class Kohana_ORM {
 	 * @param   array  array of key => val
 	 * @return  ORM
 	 */
-	public function values($values)
+	public function values($values = NULL)
 	{
+		if ($values === NULL)
+			return $this->_object;
+
 		foreach ($values as $key => $value)
 		{
 			if (array_key_exists($key, $this->_object) OR array_key_exists($key, $this->_ignored_columns))
