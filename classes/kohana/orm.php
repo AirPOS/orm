@@ -939,7 +939,7 @@ class Kohana_ORM {
 				$column = $this->_created_column['column'];
 				$format = $this->_created_column['format'];
 
-				$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : date($format);
+				$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : gmdate($format);
 			}
 
 			$result = DB::insert($this->_table_name)
