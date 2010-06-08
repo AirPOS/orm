@@ -920,7 +920,7 @@ class Kohana_ORM {
 				$column = $this->_updated_column['column'];
 				$format = $this->_updated_column['format'];
 
-				$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : date($format);
+				$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : gmdate($format);
 			}
 
 			$query = DB::update($this->_table_name)
