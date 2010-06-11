@@ -19,7 +19,7 @@ class ORM_MPTT_Test extends PHPUnit_Framework_TestCase
 	 */
 	public function tearDown()
 	{
-		// Model_ORM_MPTT_Test::delete_table();
+		Model_ORM_MPTT_Test::delete_table();
 	}
 	
 	/**
