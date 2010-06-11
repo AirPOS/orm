@@ -2,10 +2,8 @@
 /**
  * ORM Base Class
  *
- * @author     AirPOS Ltd.
- * @copyright  (c) 2010 AirPOS Ltd.
  */
-abstract class ORM extends Kohana_ORM
+class ORM extends Kohana_ORM
 {
 	
 }
