@@ -1377,6 +1377,12 @@ class Kohana_ORM {
 	 */
 	public function pk()
 	{
+		if ($this->empty_pk())
+		{
+			$this->_object[$this->_primary_key] = ORM::uuid();
+			$this->_changed[$this->_primary_key] = $this->_primary_key;
+		}
+
 		return $this->_object[$this->_primary_key];
 	}
 
