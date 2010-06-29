@@ -632,10 +632,10 @@ abstract class ORM_MPTT extends ORM
 		Database::instance((string) $this->_db)->query(NULL, 'UPDATE '.$this->_table_name.' 
 			SET `'.$this->_left_column.'` = `'.$this->_left_column.'` + '.$offset.', `'.$this->_right_column.'` = `'.$this->_right_column.'` + '.$offset.'
 			, `'.$this->_level_column.'` = `'.$this->_level_column.'` + '.$level_offset.'
-			, `'.$this->_scope_column.'` = '.$target->{$this->_scope_column}.' 
-			WHERE `'.$this->_left_column.'` >= '.$this->{$this->_left_column}.' 
-			AND `'.$this->_right_column.'` <= '.$this->{$this->_right_column}.' 
-			AND `'.$this->_scope_column.'` = '.$this->{$this->_scope_column}, TRUE);
+			, `'.$this->_scope_column.'` = \''.$target->{$this->_scope_column}.'\' 
+			WHERE `'.$this->_left_column.'` >= \''.$this->{$this->_left_column}.'\' 
+			AND `'.$this->_right_column.'` <= \''.$this->{$this->_right_column}.'\' 
+			AND `'.$this->_scope_column.'` = \''.$this->{$this->_scope_column}.'\'', TRUE);
 		
 		$this->delete_space($this->{$this->_left_column}, $size);
 
