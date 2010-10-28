@@ -52,7 +52,10 @@ class Kohana_ORM {
 
 	// Auto-update columns for creation and updates
 	protected $_updated_column = NULL;
+	protected $_override_updated_column = FALSE;
+	
 	protected $_created_column = NULL;
+	protected $_override_created_column = FALSE;
 
 	// Table primary key and value
 	protected $_primary_key  = 'id';
@@ -884,6 +887,30 @@ class Kohana_ORM {
 			return FALSE;
 		}
 	}
+	
+	/**
+	 * Override Updated Column
+	 * 
+	 * @chainable
+	 * @return ORM
+	 */
+	public function override_updated_column($modifier = TRUE)
+	{
+		$this->_override_updated_column = (bool) $modifier;
+		return $this;
+	}
+	
+	/**
+	 * Override Created Column
+	 * 
+	 * @chainable
+	 * @return ORM
+	 */
+	public function override_created_column($modifier = TRUE)
+	{
+		$this->_override_created_column = (bool) $modifier;
+		return $this;
+	}
 
 	/**
 	 * Saves the current object.
@@ -914,7 +941,7 @@ class Kohana_ORM {
 		{
 			// Primary key isn't empty and hasn't been changed so do an update
 
-			if (is_array($this->_updated_column))
+			if (is_array($this->_updated_column) AND ! $this->_override_updated_column)
 			{
 				// Fill the updated column
 				$column = $this->_updated_column['column'];
@@ -933,7 +960,7 @@ class Kohana_ORM {
 		}
 		else
 		{
-			if (is_array($this->_created_column))
+			if (is_array($this->_created_column) AND ! $this->_override_created_column)
 			{
 				// Fill the created column
 				$column = $this->_created_column['column'];
