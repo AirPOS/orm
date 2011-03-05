@@ -10,15 +10,20 @@
  *
  * $Id: ORM.php 4427 2009-06-19 23:31:36Z jheathco $
  *
- * @package    ORM
+ * @package    Kohana/ORM
+ * @category   Base
  * @author     Kohana Team
- * @copyright  (c) 2007-2009 Kohana Team
- * @license    http://kohanaphp.com/license.html
+ * @copyright  (c) 2007-2010 Kohana Team
+ * @license    http://kohanaframework.org/license
  */
 class Kohana_ORM {
 
 	// Current relationships
 	protected $_has_one    = array();
+
+	/**
+	 *@var  array  Array of belongs to relationships. See [Relationships](orm/relationships) for usage.
+	 */
 	protected $_belongs_to = array();
 	protected $_has_many   = array();
 
@@ -87,7 +92,8 @@ class Kohana_ORM {
 		'where', 'and_where', 'or_where', 'where_open', 'and_where_open', 'or_where_open', 'where_close',
 		'and_where_close', 'or_where_close', 'distinct', 'select', 'from', 'join', 'on', 'group_by',
 		'having', 'and_having', 'or_having', 'having_open', 'and_having_open', 'or_having_open',
-		'having_close', 'and_having_close', 'or_having_close', 'order_by', 'limit', 'offset', 'cached'
+		'having_close', 'and_having_close', 'or_having_close', 'order_by', 'limit', 'offset', 'cached',
+		'count_last_query'
 	);
 
 	// Members that have access methods
@@ -221,6 +227,18 @@ class Kohana_ORM {
 	public function __toString()
 	{
 		return (string) $this->pk();
+	}
+
+	/**
+	 * Allows serialization of only the object data and state, to prevent
+	 * "stale" objects being unserialized, which also requires less memory.
+	 *
+	 * @return  array
+	 */
+	public function __sleep()
+	{
+		// Store only information about the object
+		return array('_object_name', '_object', '_changed', '_loaded', '_saved', '_sorting', '_ignored_columns');
 	}
 
 	/**
@@ -431,11 +449,8 @@ class Kohana_ORM {
 	 * @param   array  array of key => val
 	 * @return  ORM
 	 */
-	public function values($values = NULL)
+	public function values($values)
 	{
-		if ($values === NULL)
-			return $this->_object;
-
 		foreach ($values as $key => $value)
 		{
 			if (array_key_exists($key, $this->_object) OR array_key_exists($key, $this->_ignored_columns))
@@ -543,6 +558,12 @@ class Kohana_ORM {
 			}
 		}
 
+		if ( ! empty($this->_ignored_columns))
+		{
+			// Optimize for performance
+			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
+		}
+
 		foreach ($this->_belongs_to as $alias => $details)
 		{
 			$defaults['model']       = $alias;
@@ -584,11 +605,17 @@ class Kohana_ORM {
 
 		foreach ($this->_rules as $field => $rules)
 		{
+			// PHP converts TRUE to int 1, so we have to fix that
+			$field = ($field === 1) ? TRUE : $field;
+
 			$this->_validate->rules($field, $rules);
 		}
 
 		foreach ($this->_filters as $field => $filters)
 		{
+			// PHP converts TRUE to int 1, so we have to fix that
+			$field = ($field === 1) ? TRUE : $field;
+
 			$this->_validate->filters($field, $filters);
 		}
 
@@ -605,6 +632,9 @@ class Kohana_ORM {
 
 		foreach ($this->_callbacks as $field => $callbacks)
 		{
+			// PHP converts TRUE to int 1, so we have to fix that
+			$field = ($field === 1) ? TRUE : $field;
+			
 			foreach ($callbacks as $callback)
 			{
 				if (is_string($callback) AND method_exists($this, $callback))
@@ -691,7 +721,7 @@ class Kohana_ORM {
 		}
 		else
 		{
-			if( ! isset($this->_with_applied[$parent_path]))
+			if ( ! isset($this->_with_applied[$parent_path]))
 			{
 				// If the parent path hasn't been joined yet, do it first (otherwise LEFT JOINs fail)
 				$this->with($parent_path);
@@ -704,11 +734,15 @@ class Kohana_ORM {
 		// Use the keys of the empty object to determine the columns
 		foreach (array_keys($target->_object) as $column)
 		{
-			$name   = $target_path.'.'.$column;
-			$alias  = $target_path.':'.$column;
+			// Skip over ignored columns
+			if( ! in_array($column, $target->_ignored_columns))
+			{
+				$name   = $target_path.'.'.$column;
+				$alias  = $target_path.':'.$column;
 
-			// Add the prefix so that load_result can determine the relationship
-			$this->select(array($name, $alias));
+				// Add the prefix so that load_result can determine the relationship
+				$this->select(array($name, $alias));
+			}
 		}
 
 		if (isset($parent->_belongs_to[$target_alias]))
@@ -759,28 +793,7 @@ class Kohana_ORM {
 
 			$this->_db_applied[$name] = $name;
 
-			switch (count($args))
-			{
-				case 0:
-					$this->_db_builder->$name();
-				break;
-				case 1:
-					$this->_db_builder->$name($args[0]);
-				break;
-				case 2:
-					$this->_db_builder->$name($args[0], $args[1]);
-				break;
-				case 3:
-					$this->_db_builder->$name($args[0], $args[1], $args[2]);
-				break;
-				case 4:
-					$this->_db_builder->$name($args[0], $args[1], $args[2], $args[3]);
-				break;
-				default:
-					// Here comes the snail...
-					call_user_func_array(array($this->_db_builder, $name), $args);
-				break;
-			}
+			call_user_func_array(array($this->_db_builder, $name), $args);
 		}
 
 		return $this;
@@ -1102,7 +1115,11 @@ class Kohana_ORM {
 		// Replace the object and reset the object status
 		$this->_object = $this->_changed = $this->_related = array();
 
-		return $this->find($primary_key);
+		// Only reload the object if we have one to reload
+		if ($this->_loaded)
+			return $this->find($primary_key);
+		else
+			return $this->clear();
 	}
 
 	/**
@@ -1218,7 +1235,7 @@ class Kohana_ORM {
 
 		$this->_build(Database::SELECT);
 
-		$records = $this->_db_builder->from($this->_table_name)
+		$records = (int) $this->_db_builder->from($this->_table_name)
 			->select(array('COUNT("*")', 'records_found'))
 			->execute($this->_db)
 			->get('records_found');
@@ -1351,6 +1368,9 @@ class Kohana_ORM {
 			// Only fetch 1 record
 			$this->_db_builder->limit(1);
 		}
+
+		// Select all columns by default
+		$this->_db_builder->select($this->_table_name.'.*');
 
 		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
 		{
