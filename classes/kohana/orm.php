@@ -458,7 +458,7 @@ class Kohana_ORM {
 	 */
 	public static function start()
 	{
-		DB::query(NULL, "START TRANSACTION")->execute($this->_db);
+		DB::query(NULL, "START TRANSACTION")->execute(Kohana::$environment);
 	}
 
 	/**
@@ -466,7 +466,7 @@ class Kohana_ORM {
 	 */
 	public static function commit()
 	{
-		DB::query(NULL, "COMMIT")->execute($this->_db);
+		DB::query(NULL, "COMMIT")->execute(Kohana::$environment);
 	}
 
 	/**
@@ -474,7 +474,7 @@ class Kohana_ORM {
 	 */
 	public static function rollback()
 	{
-		DB::query(NULL, "ROLLBACK")->execute($this->_db);
+		DB::query(NULL, "ROLLBACK")->execute(Kohana::$environment);
 	}
 
 	/**
